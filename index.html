@@ -1,0 +1,685 @@
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Reunión General de Seguridad de KEC</title>
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Seguridad KEC">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<meta name="theme-color" content="#080808">
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #080808; color: #fff;
+    height: 100vh; width: 100vw; overflow: hidden; position: fixed; top: 0; left: 0;
+  }
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 3px;
+    background: linear-gradient(90deg, #cc3300, #ffaa00);
+    transition: width 0.35s ease; z-index: 200; border-radius: 0 2px 2px 0;
+  }
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 54px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; z-index: 150; padding-top: 3px;
+  }
+  #tts-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #ccc; padding: 8px 20px; border-radius: 30px;
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  #tts-btn.speaking { background: rgba(255,100,0,0.2); border-color: #ff6600; color: #ff8833; }
+  #auto-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #555; padding: 8px 16px; border-radius: 30px;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  #auto-btn.on { background: rgba(0,200,100,0.15); border-color: #00cc66; color: #00cc66; }
+  #lang-toggle {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: #ccc; padding: 8px 14px; border-radius: 30px;
+    font-size: 12px; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap;
+  }
+  #slide-counter { position: fixed; top: 18px; right: 16px; font-size: 11px; color: #444; z-index: 150; font-weight: 700; }
+
+  #countdown-wrap {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    z-index: 160; display: none; flex-direction: column; align-items: center; gap: 4px;
+  }
+  #countdown-wrap.visible { display: flex; }
+  #countdown-ring { position: relative; width: 36px; height: 36px; }
+  #countdown-svg { transform: rotate(-90deg); }
+  #countdown-circle { fill: none; stroke: #ff6600; stroke-width: 3; stroke-dasharray: 94; stroke-dashoffset: 94; stroke-linecap: round; }
+  #countdown-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 13px; font-weight: 800; color: #ff6600; }
+  #countdown-label { font-size: 10px; color: #333; letter-spacing: 1px; text-transform: uppercase; }
+
+  #slides-container { position: fixed; top: 54px; bottom: 70px; left: 0; right: 0; overflow: hidden; }
+
+  .slide {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 24px 28px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    transform: translateX(100%); opacity: 0; visibility: hidden;
+    transition: none; will-change: transform, opacity; z-index: 1;
+  }
+  .slide.is-active { transform: translateX(0); opacity: 1; visibility: visible; z-index: 10; }
+  .slide.enter-from-right { transform: translateX(100%); opacity: 0; visibility: visible; z-index: 9; transition: transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease; }
+  .slide.enter-from-right.animating { transform: translateX(0); opacity: 1; }
+  .slide.enter-from-left { transform: translateX(-100%); opacity: 0; visibility: visible; z-index: 9; transition: transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease; }
+  .slide.enter-from-left.animating { transform: translateX(0); opacity: 1; }
+  .slide.exit-to-left { transform: translateX(0); opacity: 1; visibility: visible; z-index: 8; transition: transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease; }
+  .slide.exit-to-left.animating { transform: translateX(-100%); opacity: 0; }
+  .slide.exit-to-right { transform: translateX(0); opacity: 1; visibility: visible; z-index: 8; transition: transform 0.38s cubic-bezier(0.4,0,0.2,1), opacity 0.38s ease; }
+  .slide.exit-to-right.animating { transform: translateX(100%); opacity: 0; }
+
+  .w { display: inline; border-radius: 3px; padding: 0 1px; }
+  .w.lit { background: #cc4400; color: #fff !important; -webkit-text-fill-color: #fff !important; border-radius: 4px; }
+
+  /* THEMES */
+  .t-launch  { background: radial-gradient(ellipse at 50% 35%, #1a0800 0%, #080300 100%); }
+  .t-dark    { background: linear-gradient(160deg, #0a0a0a 0%, #111111 100%); }
+  .t-orange  { background: linear-gradient(160deg, #120800 0%, #1c0e00 100%); }
+  .t-red     { background: linear-gradient(160deg, #140303 0%, #1e0404 100%); }
+  .t-blue    { background: linear-gradient(160deg, #03101f 0%, #051828 100%); }
+  .t-green   { background: linear-gradient(160deg, #031208 0%, #04180a 100%); }
+  .t-neutral { background: linear-gradient(160deg, #0c0c0c 0%, #141414 100%); }
+  .t-warn    { background: linear-gradient(160deg, #1a1200 0%, #241900 100%); }
+
+  .slide-tag { font-size: 10px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: #444; margin-bottom: 10px; text-align: center; width: 100%; }
+  .slide-title { font-size: 24px; font-weight: 800; text-align: center; line-height: 1.2; margin-bottom: 14px; color: #fff; width: 100%; }
+
+  .hero-logo { font-size: 10px; font-weight: 700; letter-spacing: 3.5px; color: #2a1500; text-transform: uppercase; margin-bottom: 18px; }
+  .hero-title {
+    font-size: 40px; font-weight: 900; text-align: center; line-height: 1.05;
+    background: linear-gradient(135deg, #ffffff 0%, #ffaa55 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px;
+  }
+  .hero-sub { font-size: 13px; color: #3a2000; text-align: center; line-height: 1.8; margin-bottom: 40px; }
+  .start-btn {
+    background: linear-gradient(135deg, #cc3300, #ff6600); color: #fff; border: none;
+    padding: 18px 56px; border-radius: 50px; font-size: 18px; font-weight: 900;
+    cursor: pointer; letter-spacing: 2px; box-shadow: 0 8px 30px rgba(180,50,0,0.45); transition: all 0.2s;
+  }
+  .start-btn:active { transform: scale(0.96); }
+
+  .section-intro { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .section-icon { font-size: 52px; margin-bottom: 16px; }
+  .section-intro-title { font-size: 30px; font-weight: 900; color: #fff; margin-bottom: 10px; }
+  .section-intro-sub { font-size: 14px; color: #555; line-height: 1.7; max-width: 380px; }
+
+  .rule-block { width: 100%; max-width: 480px; background: rgba(255,255,255,0.03); border-left: 4px solid #222; border-radius: 10px; padding: 13px 16px; margin: 5px 0; }
+  .rule-block.orange { border-left-color: #cc4400; }
+  .rule-block.red    { border-left-color: #bb1111; }
+  .rule-block.blue   { border-left-color: #0055ee; }
+  .rule-block p { font-size: 14px; color: #999; line-height: 1.5; }
+  .rule-block strong { color: #eee; }
+
+  .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+  .badge.orange { background: rgba(180,60,0,0.12); color: #ff8833; border: 1px solid rgba(180,60,0,0.35); }
+  .badge.red    { background: rgba(180,20,20,0.12); color: #ff4444; border: 1px solid rgba(180,20,20,0.35); }
+  .badge.yellow { background: rgba(180,140,0,0.12); color: #ffcc00; border: 1px solid rgba(180,140,0,0.35); }
+  .badge.blue   { background: rgba(0,80,220,0.12); color: #3388ff; border: 1px solid rgba(0,80,220,0.35); }
+  .badge.green  { background: rgba(0,150,60,0.12); color: #22bb55; border: 1px solid rgba(0,150,60,0.35); }
+  .badge.warn   { background: rgba(180,120,0,0.12); color: #ffaa00; border: 1px solid rgba(180,120,0,0.35); }
+
+  .slide-list { width: 100%; max-width: 480px; list-style: none; }
+  .slide-list li { padding: 8px 0 8px 20px; position: relative; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; color: #aaa; line-height: 1.45; }
+  .slide-list li::before { content: '›'; position: absolute; left: 2px; color: #cc4400; font-size: 16px; font-weight: 700; top: 7px; }
+  .slide-list li strong { color: #ddd; }
+  .slide-list li.crit { color: #ff8833; }
+  .slide-list li.crit::before { color: #ff2200; }
+
+  .check-list { width: 100%; max-width: 480px; }
+  .check-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 14px; color: #aaa; line-height: 1.4; }
+  .check-box { width: 24px; height: 24px; border: 2px solid #2a2a2a; border-radius: 7px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .check-box.checked { background: #cc4400; border-color: #cc4400; }
+  .check-box.checked::after { content: '✓'; font-size: 14px; color: #fff; font-weight: 800; }
+
+  .status-item { width: 100%; max-width: 480px; display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .sdot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .sdot.orange { background: #ff6600; } .sdot.red { background: #cc2222; }
+  .sdot.yellow { background: #ffaa00; } .sdot.gray { background: #444; } .sdot.green { background: #00aa44; }
+  .s-label { font-size: 13px; font-weight: 700; color: #ddd; }
+  .s-desc { font-size: 12px; color: #666; margin-top: 2px; }
+
+  .info-box { width: 100%; max-width: 480px; border-radius: 12px; padding: 14px 18px; margin-top: 12px; }
+  .info-box.red    { background: rgba(180,20,20,0.08); border: 1px solid rgba(180,20,20,0.2); }
+  .info-box.orange { background: rgba(180,70,0,0.08); border: 1px solid rgba(180,70,0,0.2); }
+  .info-box.blue   { background: rgba(0,80,180,0.08); border: 1px solid rgba(0,80,180,0.2); }
+  .info-box p { font-size: 14px; color: #999; line-height: 1.6; }
+  .info-box strong { color: #eee; }
+
+  .verify-box { width: 100%; max-width: 480px; background: rgba(180,120,0,0.06); border: 1px solid rgba(180,120,0,0.2); border-radius: 14px; padding: 18px 20px; margin-top: 10px; }
+  .verify-box p { font-size: 15px; color: #bbb; line-height: 1.7; }
+  .verify-box strong { color: #fff; }
+
+  .alert-banner { width: 100%; max-width: 480px; background: rgba(180,0,0,0.12); border: 1px solid rgba(220,0,0,0.25); border-radius: 12px; padding: 14px 18px; text-align: center; margin-top: 12px; }
+  .alert-banner p { font-size: 14px; color: #ff6666; line-height: 1.6; font-weight: 600; }
+
+  .quote-box { background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.07); padding: 24px 22px; max-width: 420px; text-align: center; margin-top: 14px; width: 100%; }
+  .quote-box p { font-size: 16px; line-height: 1.7; color: #aaa; font-style: italic; }
+
+  #nav {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 20px; background: rgba(6,6,6,0.94);
+    backdrop-filter: blur(14px); border-top: 1px solid rgba(255,255,255,0.05); z-index: 150;
+  }
+  .nav-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: #bbb; padding: 11px 24px; border-radius: 30px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
+  .nav-btn:active { transform: scale(0.95); }
+  .nav-btn:disabled { opacity: 0.15; pointer-events: none; }
+  .nav-btn.primary { background: linear-gradient(135deg, #cc3300, #ff6600); border: none; color: #fff; box-shadow: 0 4px 18px rgba(180,50,0,0.35); }
+</style>
+</head>
+<body>
+
+<div id="progress-bar" style="width: 0%;"></div>
+<div id="topbar">
+  <button id="tts-btn" onclick="toggleTTS()">🎧 Escuchar · ▶️ Reproducir</button>
+  <button id="auto-btn" onclick="toggleAuto()">⏭ Auto: Desactivado</button>
+  <a id="lang-toggle" href="https://hood-boss-monthly-meeting.netlify.app/">🌐 EN · English</a>
+</div>
+<div id="slide-counter"></div>
+
+<div id="countdown-wrap">
+  <div id="countdown-ring">
+    <svg id="countdown-svg" width="36" height="36" viewBox="0 0 36 36">
+      <circle cx="18" cy="18" r="15" fill="none" stroke="#1a1a1a" stroke-width="3"></circle>
+      <circle id="countdown-circle" cx="18" cy="18" r="15"></circle>
+    </svg>
+    <div id="countdown-num">4</div>
+  </div>
+  <div id="countdown-label">Siguiente diapositiva</div>
+</div>
+
+<div id="slides-container">
+
+  <!-- 0: LAUNCH -->
+  <div class="slide t-launch is-active" data-index="0" data-wrapped="1">
+    <div class="hero-logo">Operaciones de Campo de KEC</div>
+    <div class="hero-title"><span class="w">Reunión</span> <span class="w">General</span><br><span class="w">de</span> <span class="w">Seguridad</span></div>
+    <div class="hero-sub"><span class="w">Escaleras</span> <span class="w">y</span> <span class="w">techos</span> <span class="w">·</span> <span class="w">Riesgos</span> <span class="w">químicos</span> <span class="w">·</span> <span class="w">Manejo</span><br><span class="w">Entorno</span> <span class="w">·</span> <span class="w">Finalización</span> <span class="w">del</span> <span class="w">trabajo</span></div>
+    <button class="start-btn" onclick="goTo(1)">▶ COMENZAR</button>
+  </div>
+
+  <!-- 1: BEFORE WE BEGIN -->
+  <div class="slide t-dark" data-index="1" data-wrapped="1">
+    <div class="slide-tag">Introducción</div>
+    <div class="slide-title"><span class="w">Antes</span> <span class="w">de</span> <span class="w">comenzar</span></div>
+    <div class="rule-block orange">
+      <p><span class="w">Todos</span> <span class="w">los</span> <span class="w">puntos</span> <span class="w">clave</span> <span class="w">se</span> <span class="w">discutirán</span> <span class="w">en</span> <span class="w">detalle</span> <span class="w">con</span> <span class="w">cada</span> <span class="w">miembro</span> <span class="w">de</span> <span class="w">la</span> <span class="w">cuadrilla.</span> <span class="w">Se</span> <span class="w">espera</span> <span class="w">que</span> <span class="w">conozcas</span> <span class="w">y</span> <span class="w">sigas</span> <span class="w">cada</span> <span class="w">política</span> <span class="w">cubierta</span> <span class="w">aquí.</span></p>
+    </div>
+    <div class="rule-block orange" style="margin-top:4px;">
+      <p><strong><span class="w">¿Preguntas?</span></strong> <span class="w">Envíalas</span> <span class="w">a</span> <span class="w">tu</span> <span class="w">supervisor</span> <span class="w">de</span> <span class="w">seguridad</span> <span class="w">(safety</span> <span class="w">supervisor)</span> <span class="w">de</span> <span class="w">inmediato.</span> <span class="w">No</span> <span class="w">adivines.</span> <span class="w">No</span> <span class="w">supongas.</span></p>
+    </div>
+    <div class="alert-banner" style="margin-top:12px;">
+      <p><span class="w">Todas</span> <span class="w">las</span> <span class="w">lesiones</span> <span class="w">deben</span> <span class="w">reportarse</span> <span class="w">al</span> <span class="w">Gerente</span> <span class="w">de</span> <span class="w">Seguridad</span> <span class="w">(Safety</span> <span class="w">Manager)</span> <span class="w">de</span> <span class="w">inmediato.</span> <span class="w">Cualquier</span> <span class="w">lesión</span> <span class="w">que</span> <span class="w">requiera</span> <span class="w">atención</span> <span class="w">médica</span> <span class="w">o</span> <span class="w">que</span> <span class="w">cause</span> <span class="w">daños</span> <span class="w">materiales</span> <span class="w">significativos</span> <span class="w">requiere</span> <span class="w">una</span> <span class="w">prueba</span> <span class="w">de</span> <span class="w">drogas.</span> <span class="w">Sin</span> <span class="w">excepciones.</span></p>
+    </div>
+  </div>
+
+  <!-- 2: LADDER INTRO -->
+  <div class="slide t-orange" data-index="2" data-wrapped="1">
+    <div class="section-intro">
+      <div class="section-icon"><span class="w">🪜</span></div>
+      <div class="section-intro-title"><span class="w">Seguridad</span> <span class="w">en</span> <span class="w">escaleras</span> <span class="w">y</span> <span class="w">techos</span></div>
+      <div class="section-intro-sub"><span class="w">Las</span> <span class="w">caídas</span> <span class="w">son</span> <span class="w">una</span> <span class="w">de</span> <span class="w">las</span> <span class="w">principales</span> <span class="w">causas</span> <span class="w">de</span> <span class="w">lesiones</span> <span class="w">graves</span> <span class="w">en</span> <span class="w">el</span> <span class="w">trabajo</span> <span class="w">de</span> <span class="w">campo.</span> <span class="w">Cada</span> <span class="w">regla</span> <span class="w">aquí</span> <span class="w">existe</span> <span class="w">porque</span> <span class="w">alguien</span> <span class="w">se</span> <span class="w">lastimó.</span> <span class="w">Presta</span> <span class="w">atención.</span></div>
+    </div>
+  </div>
+
+  <!-- 3: LADDER COMMUNICATION -->
+  <div class="slide t-orange" data-index="3" data-wrapped="1">
+    <div class="slide-tag">Escaleras y techos · Comunicación</div>
+    <div class="slide-title"><span class="w">Comunícate</span> <span class="w">siempre</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">moverte</span></div>
+    <div class="badge orange"><span class="w">Crítico</span></div>
+    <ul class="slide-list">
+      <li class="crit"><span class="w">Avisa</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">SUBIR.</span> <span class="w">Avisa</span> <span class="w">cuando</span> <span class="w">estés</span> <span class="w">en</span> <span class="w">el</span> <span class="w">techo.</span> <span class="w">Avisa</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">BAJAR.</span></li>
+      <li><span class="w">Si</span> <span class="w">tu</span> <span class="w">compañero</span> <span class="w">no</span> <span class="w">recibe</span> <span class="w">respuesta,</span> <span class="w">esa</span> <span class="w">es</span> <span class="w">la</span> <span class="w">señal</span> <span class="w">de</span> <span class="w">que</span> <span class="w">algo</span> <span class="w">puede</span> <span class="w">estar</span> <span class="w">mal.</span></li>
+      <li><span class="w">Ambos</span> <span class="w">miembros</span> <span class="w">de</span> <span class="w">la</span> <span class="w">cuadrilla</span> <span class="w">siempre</span> <span class="w">deben</span> <span class="w">conocer</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">áreas</span> <span class="w">de</span> <span class="w">servicio</span> <span class="w">en</span> <span class="w">cada</span> <span class="w">ubicación.</span></li>
+      <li><span class="w">Las</span> <span class="w">escaleras</span> <span class="w">de</span> <span class="w">extensión</span> <span class="w">deben</span> <span class="w">sobresalir</span> <span class="w">3</span> <span class="w">pies</span> <span class="w">por</span> <span class="w">encima</span> <span class="w">de</span> <span class="w">la</span> <span class="w">línea</span> <span class="w">del</span> <span class="w">techo.</span> <span class="w">Norma</span> <span class="w">de</span> <span class="w">OSHA.</span></li>
+      <li><span class="w">La</span> <span class="w">escalera</span> <span class="w">debe</span> <span class="w">estar</span> <span class="w">a</span> <span class="w">un</span> <span class="w">ángulo</span> <span class="w">de</span> <span class="w">75</span> <span class="w">grados.</span></li>
+      <li><span class="w">La</span> <span class="w">escalera</span> <span class="w">debe</span> <span class="w">colocarse</span> <span class="w">sobre</span> <span class="w">una</span> <span class="w">superficie</span> <span class="w">segura</span> <span class="w">y</span> <span class="w">nivelada.</span></li>
+    </ul>
+  </div>
+
+  <!-- 4: LADDER RULES -->
+  <div class="slide t-orange" data-index="4" data-wrapped="1">
+    <div class="slide-tag">Escaleras y techos · Reglas</div>
+    <div class="slide-title"><span class="w">Reglas</span> <span class="w">de</span> <span class="w">escaleras</span> <span class="w">—</span> <span class="w">En</span> <span class="w">cada</span> <span class="w">trabajo</span></div>
+    <div class="badge orange"><span class="w">Obligatorio</span></div>
+    <ul class="slide-list">
+      <li><span class="w">Inspecciona</span> <span class="w">cada</span> <span class="w">escalera</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">usarla.</span></li>
+      <li><span class="w">Mantén</span> <span class="w">las</span> <span class="w">escaleras</span> <span class="w">limpias</span> <span class="w">y</span> <span class="w">sin</span> <span class="w">grasa.</span> <span class="w">Límpialas</span> <span class="w">cada</span> <span class="w">semana</span> <span class="w">o</span> <span class="w">después</span> <span class="w">de</span> <span class="w">cada</span> <span class="w">uso.</span></li>
+      <li><span class="w">Nunca</span> <span class="w">cuelgues</span> <span class="w">nada</span> <span class="w">de</span> <span class="w">un</span> <span class="w">peldaño.</span></li>
+      <li><span class="w">Nunca</span> <span class="w">te</span> <span class="w">pares</span> <span class="w">en</span> <span class="w">los</span> <span class="w">dos</span> <span class="w">escalones</span> <span class="w">superiores</span> <span class="w">de</span> <span class="w">ninguna</span> <span class="w">escalera.</span></li>
+      <li><span class="w">Sube</span> <span class="w">con</span> <span class="w">ambas</span> <span class="w">manos.</span> <span class="w">Lleva</span> <span class="w">solo</span> <span class="w">una</span> <span class="w">mochila.</span> <span class="w">Usa</span> <span class="w">una</span> <span class="w">cuerda</span> <span class="w">para</span> <span class="w">las</span> <span class="w">herramientas</span> <span class="w">y</span> <span class="w">las</span> <span class="w">mangueras.</span></li>
+      <li class="crit"><span class="w">Las</span> <span class="w">escaleras</span> <span class="w">de</span> <span class="w">metal</span> <span class="w">conducen</span> <span class="w">electricidad.</span> <span class="w">Mantente</span> <span class="w">alejado</span> <span class="w">de</span> <span class="w">las</span> <span class="w">líneas</span> <span class="w">eléctricas</span> <span class="w">y</span> <span class="w">los</span> <span class="w">cables</span> <span class="w">expuestos.</span></li>
+      <li><span class="w">Nunca</span> <span class="w">excedas</span> <span class="w">la</span> <span class="w">capacidad</span> <span class="w">de</span> <span class="w">peso</span> <span class="w">indicada</span> <span class="w">en</span> <span class="w">la</span> <span class="w">etiqueta</span> <span class="w">de</span> <span class="w">la</span> <span class="w">escalera.</span></li>
+      <li><span class="w">Despeja</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">escaleras</span> <span class="w">al</span> <span class="w">final</span> <span class="w">de</span> <span class="w">tu</span> <span class="w">turno.</span></li>
+      <li><span class="w">Las</span> <span class="w">escaleras</span> <span class="w">deben</span> <span class="w">estar</span> <span class="w">bien</span> <span class="w">sujetas</span> <span class="w">al</span> <span class="w">techo</span> <span class="w">del</span> <span class="w">camión</span> <span class="w">o</span> <span class="w">amarradas</span> <span class="w">adentro.</span></li>
+      <li><span class="w">Inspecciona</span> <span class="w">los</span> <span class="w">portaescaleras</span> <span class="w">periódicamente.</span> <span class="w">La</span> <span class="w">exposición</span> <span class="w">al</span> <span class="w">sol</span> <span class="w">(rayos</span> <span class="w">UV)</span> <span class="w">los</span> <span class="w">deteriora</span> <span class="w">con</span> <span class="w">el</span> <span class="w">tiempo.</span></li>
+    </ul>
+  </div>
+
+  <!-- 5: ROOFTOP -->
+  <div class="slide t-orange" data-index="5" data-wrapped="1">
+    <div class="slide-tag">Escaleras y techos · Techo</div>
+    <div class="slide-title"><span class="w">En</span> <span class="w">el</span> <span class="w">techo</span> <span class="w">—</span> <span class="w">Mantente</span> <span class="w">alerta</span></div>
+    <div class="badge red"><span class="w">Alto</span> <span class="w">riesgo</span></div>
+    <ul class="slide-list">
+      <li><span class="w">Limita</span> <span class="w">los</span> <span class="w">viajes</span> <span class="w">al</span> <span class="w">techo.</span> <span class="w">Usa</span> <span class="w">el</span> <span class="w">acceso</span> <span class="w">interior</span> <span class="w">cuando</span> <span class="w">sea</span> <span class="w">posible.</span></li>
+      <li><span class="w">Marca</span> <span class="w">las</span> <span class="w">órdenes</span> <span class="w">de</span> <span class="w">trabajo</span> <span class="w">sensibles</span> <span class="w">al</span> <span class="w">clima</span> <span class="w">con</span> <span class="w">una</span> <span class="w">etiqueta</span> <span class="w">o</span> <span class="w">nota.</span> <span class="w">Especialmente</span> <span class="w">los</span> <span class="w">techos</span> <span class="w">inclinados</span> <span class="w">y</span> <span class="w">de</span> <span class="w">membrana.</span></li>
+      <li class="crit"><span class="w">Los</span> <span class="w">techos</span> <span class="w">de</span> <span class="w">membrana</span> <span class="w">son</span> <span class="w">muy</span> <span class="w">resbalosos.</span> <span class="w">Acércate</span> <span class="w">a</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">escaleras</span> <span class="w">despacio.</span></li>
+      <li><span class="w">El</span> <span class="w">rocío</span> <span class="w">de</span> <span class="w">la</span> <span class="w">manguera</span> <span class="w">crea</span> <span class="w">neblina.</span> <span class="w">Los</span> <span class="w">techos</span> <span class="w">y</span> <span class="w">las</span> <span class="w">escaleras</span> <span class="w">se</span> <span class="w">vuelven</span> <span class="w">peligrosos</span> <span class="w">rápido.</span></li>
+      <li><span class="w">Evita</span> <span class="w">el</span> <span class="w">calzado</span> <span class="w">inadecuado,</span> <span class="w">los</span> <span class="w">jeans</span> <span class="w">azules</span> <span class="w">y</span> <span class="w">la</span> <span class="w">ropa</span> <span class="w">voluminosa.</span></li>
+      <li><span class="w">Lleva</span> <span class="w">siempre</span> <span class="w">una</span> <span class="w">linterna</span> <span class="w">de</span> <span class="w">repuesto.</span> <span class="w">Ten</span> <span class="w">cuidado</span> <span class="w">con</span> <span class="w">las</span> <span class="w">tuberías</span> <span class="w">de</span> <span class="w">gas,</span> <span class="w">las</span> <span class="w">líneas</span> <span class="w">de</span> <span class="w">drenaje</span> <span class="w">y</span> <span class="w">el</span> <span class="w">cableado</span> <span class="w">eléctrico.</span></li>
+      <li class="crit"><span class="w">Calzado</span> <span class="w">obligatorio:</span> <span class="w">punta</span> <span class="w">reforzada,</span> <span class="w">resistente</span> <span class="w">a</span> <span class="w">resbalones</span> <span class="w">y</span> <span class="w">al</span> <span class="w">agua,</span> <span class="w">de</span> <span class="w">ajuste</span> <span class="w">ceñido.</span> <span class="w">No</span> <span class="w">se</span> <span class="w">permiten</span> <span class="w">sandalias</span> <span class="w">ni</span> <span class="w">zapatos</span> <span class="w">abiertos.</span></li>
+    </ul>
+  </div>
+
+  <!-- 6: CHEMICAL INTRO -->
+  <div class="slide t-red" data-index="6" data-wrapped="1">
+    <div class="section-intro">
+      <div class="section-icon"><span class="w">⚗️</span></div>
+      <div class="section-intro-title"><span class="w">Riesgos</span> <span class="w">químicos</span></div>
+      <div class="section-intro-sub"><span class="w">Los</span> <span class="w">químicos</span> <span class="w">con</span> <span class="w">los</span> <span class="w">que</span> <span class="w">trabajamos</span> <span class="w">son</span> <span class="w">peligrosos.</span> <span class="w">Conoce</span> <span class="w">la</span> <span class="w">política.</span> <span class="w">Conoce</span> <span class="w">las</span> <span class="w">fichas.</span> <span class="w">Conoce</span> <span class="w">dónde</span> <span class="w">están.</span></div>
+    </div>
+  </div>
+
+  <!-- 7: CHEMICAL RULES -->
+  <div class="slide t-red" data-index="7" data-wrapped="1">
+    <div class="slide-tag">Riesgos químicos · Política</div>
+    <div class="slide-title"><span class="w">Seguridad</span> <span class="w">química</span> <span class="w">—</span> <span class="w">Apréndetelo</span> <span class="w">de</span> <span class="w">memoria</span></div>
+    <div class="badge red"><span class="w">Crítico</span></div>
+    <ul class="slide-list">
+      <li class="crit"><span class="w">H2O</span> <span class="w">DE</span> <span class="w">INMEDIATO.</span> <span class="w">Sumérgete</span> <span class="w">en</span> <span class="w">agua</span> <span class="w">de</span> <span class="w">inmediato.</span> <span class="w">Enjuaga,</span> <span class="w">diluye</span> <span class="w">y</span> <span class="w">enjuaga</span> <span class="w">de</span> <span class="w">nuevo.</span> <span class="w">Mientras</span> <span class="w">más</span> <span class="w">rápido,</span> <span class="w">mejor.</span></li>
+      <li class="crit"><span class="w">Orden:</span> <span class="w">seca</span> <span class="w">primero</span> <span class="w">con</span> <span class="w">un</span> <span class="w">trapo</span> <span class="w">(siguiente</span> <span class="w">diapositiva)</span> <span class="w">y</span> <span class="w">luego</span> <span class="w">sumérgete</span> <span class="w">en</span> <span class="w">agua</span> <span class="w">de</span> <span class="w">inmediato,</span> <span class="w">sin</span> <span class="w">esperar.</span> <span class="w">Son</span> <span class="w">dos</span> <span class="w">pasos</span> <span class="w">de</span> <span class="w">una</span> <span class="w">misma</span> <span class="w">respuesta:</span> <span class="w">secar</span> <span class="w">es</span> <span class="w">el</span> <span class="w">paso</span> <span class="w">1,</span> <span class="w">el</span> <span class="w">agua</span> <span class="w">es</span> <span class="w">el</span> <span class="w">paso</span> <span class="w">2.</span></li>
+      <li><span class="w">Lleva</span> <span class="w">ropa</span> <span class="w">extra</span> <span class="w">en</span> <span class="w">cada</span> <span class="w">turno.</span> <span class="w">No</span> <span class="w">uses</span> <span class="w">ropa</span> <span class="w">contaminada</span> <span class="w">hasta</span> <span class="w">que</span> <span class="w">esté</span> <span class="w">completamente</span> <span class="w">lavada.</span></li>
+      <li class="crit"><span class="w">Lleva</span> <span class="w">siempre</span> <span class="w">una</span> <span class="w">botella</span> <span class="w">de</span> <span class="w">agua</span> <span class="w">en</span> <span class="w">el</span> <span class="w">techo</span> <span class="w">para</span> <span class="w">un</span> <span class="w">lavado</span> <span class="w">de</span> <span class="w">ojos</span> <span class="w">de</span> <span class="w">emergencia.</span></li>
+      <li><span class="w">Habla</span> <span class="w">con</span> <span class="w">tu</span> <span class="w">médico</span> <span class="w">sobre</span> <span class="w">una</span> <span class="w">receta</span> <span class="w">de</span> <span class="w">crema</span> <span class="w">para</span> <span class="w">quemaduras</span> <span class="w">Silvadene</span> <span class="w">para</span> <span class="w">quemaduras</span> <span class="w">químicas</span> <span class="w">leves.</span></li>
+      <li><span class="w">Lee</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">fichas</span> <span class="w">SDS.</span> <span class="w">Conoce</span> <span class="w">los</span> <span class="w">nombres</span> <span class="w">y</span> <span class="w">la</span> <span class="w">terminología</span> <span class="w">de</span> <span class="w">los</span> <span class="w">químicos.</span></li>
+      <li><span class="w">Asegúrate</span> <span class="w">de</span> <span class="w">que</span> <span class="w">haya</span> <span class="w">fichas</span> <span class="w">MSDS</span> <span class="w">de</span> <span class="w">todos</span> <span class="w">los</span> <span class="w">químicos.</span> <span class="w">Conoce</span> <span class="w">dónde</span> <span class="w">están</span> <span class="w">en</span> <span class="w">todo</span> <span class="w">momento.</span></li>
+      <li><span class="w">Fotografía</span> <span class="w">el</span> <span class="w">frente</span> <span class="w">y</span> <span class="w">el</span> <span class="w">reverso</span> <span class="w">de</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">fichas</span> <span class="w">MSDS</span> <span class="w">y</span> <span class="w">guárdalas</span> <span class="w">en</span> <span class="w">tu</span> <span class="w">teléfono.</span></li>
+      <li><span class="w">Las</span> <span class="w">fichas</span> <span class="w">MSDS</span> <span class="w">deben</span> <span class="w">estar</span> <span class="w">en</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">tablillas</span> <span class="w">y</span> <span class="w">en</span> <span class="w">todos</span> <span class="w">los</span> <span class="w">restaurantes.</span></li>
+    </ul>
+  </div>
+
+  <!-- 8: VERIFICATION TRAP 1 -->
+  <div class="slide t-warn" data-index="8" data-wrapped="1">
+    <div class="slide-tag">Riesgos químicos · Consejo profesional</div>
+    <div class="slide-title"><span class="w">Quemaduras</span> <span class="w">químicas</span> <span class="w">—</span> <span class="w">Primera</span> <span class="w">respuesta</span></div>
+    <div class="badge warn"><span class="w">Importante</span></div>
+    <div class="verify-box">
+      <p><span class="w">Cuando</span> <span class="w">ocurre</span> <span class="w">una</span> <span class="w">salpicadura</span> <span class="w">de</span> <span class="w">químicos</span> <span class="w">en</span> <span class="w">la</span> <span class="w">piel,</span> <span class="w">la</span> <span class="w">respuesta</span> <span class="w">inmediata</span> <span class="w">más</span> <span class="w">eficaz</span> <span class="w">es</span> <span class="w">secar</span> <span class="w">el</span> <span class="w">área</span> <span class="w">con</span> <span class="w">un</span> <span class="w">trapo</span> <span class="w">limpio</span> <span class="w">primero,</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">aplicar</span> <span class="w">agua.</span> <span class="w">Esto</span> <span class="w">retira</span> <span class="w">la</span> <span class="w">mayor</span> <span class="w">parte</span> <span class="w">del</span> <span class="w">químico</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">diluirlo</span> <span class="w">y</span> <span class="w">evita</span> <span class="w">que</span> <span class="w">se</span> <span class="w">extienda</span> <span class="w">a</span> <span class="w">una</span> <span class="w">superficie</span> <span class="w">mayor.</span> <span class="w">El</span> <span class="w">agua</span> <span class="w">solo</span> <span class="w">debe</span> <span class="w">aplicarse</span> <span class="w">después</span> <span class="w">de</span> <span class="w">completar</span> <span class="w">el</span> <span class="w">secado</span> <span class="w">inicial.</span></p>
+      <p><span class="w">Paso</span> <span class="w">1</span> <span class="w">de</span> <span class="w">2:</span> <span class="w">secar</span> <span class="w">primero.</span> <span class="w">Paso</span> <span class="w">2,</span> <span class="w">de</span> <span class="w">inmediato</span> <span class="w">y</span> <span class="w">sin</span> <span class="w">esperar:</span> <span class="w">el</span> <span class="w">remojo</span> <span class="w">en</span> <span class="w">agua</span> <span class="w">de</span> <span class="w">la</span> <span class="w">diapositiva</span> <span class="w">anterior.</span> <span class="w">Si</span> <span class="w">la</span> <span class="w">ficha</span> <span class="w">SDS</span> <span class="w">dice</span> <span class="w">otra</span> <span class="w">cosa,</span> <span class="w">sigue</span> <span class="w">la</span> <span class="w">SDS.</span></p>
+    </div>
+  </div>
+
+  <!-- 9: DRIVING INTRO -->
+  <div class="slide t-blue" data-index="9" data-wrapped="1">
+    <div class="section-intro">
+      <div class="section-icon"><span class="w">🚐</span></div>
+      <div class="section-intro-title"><span class="w">Manejo</span></div>
+      <div class="section-intro-sub"><span class="w">La</span> <span class="w">camioneta</span> <span class="w">es</span> <span class="w">un</span> <span class="w">lugar</span> <span class="w">de</span> <span class="w">trabajo</span> <span class="w">rodante.</span> <span class="w">Tu</span> <span class="w">forma</span> <span class="w">de</span> <span class="w">manejar</span> <span class="w">refleja</span> <span class="w">a</span> <span class="w">la</span> <span class="w">empresa</span> <span class="w">y</span> <span class="w">determina</span> <span class="w">si</span> <span class="w">todos</span> <span class="w">llegan</span> <span class="w">a</span> <span class="w">casa</span> <span class="w">sanos</span> <span class="w">y</span> <span class="w">salvos.</span></div>
+    </div>
+  </div>
+
+  <!-- 10: DRIVING RULES 1 -->
+  <div class="slide t-blue" data-index="10" data-wrapped="1">
+    <div class="slide-tag">Manejo · Reglas</div>
+    <div class="slide-title"><span class="w">En</span> <span class="w">la</span> <span class="w">carretera</span> <span class="w">—</span> <span class="w">No</span> <span class="w">negociables</span></div>
+    <div class="badge blue"><span class="w">Obligatorio</span></div>
+    <ul class="slide-list">
+      <li class="crit"><span class="w">El</span> <span class="w">cinturón</span> <span class="w">de</span> <span class="w">seguridad</span> <span class="w">es</span> <span class="w">obligatorio</span> <span class="w">en</span> <span class="w">todo</span> <span class="w">momento.</span> <span class="w">Sin</span> <span class="w">excepciones.</span></li>
+      <li><span class="w">Reduce</span> <span class="w">la</span> <span class="w">velocidad.</span> <span class="w">Anticipa</span> <span class="w">siempre</span> <span class="w">condiciones</span> <span class="w">peores</span> <span class="w">de</span> <span class="w">lo</span> <span class="w">que</span> <span class="w">parecen.</span></li>
+      <li><span class="w">Ten</span> <span class="w">cuidado</span> <span class="w">siempre</span> <span class="w">con</span> <span class="w">los</span> <span class="w">animales</span> <span class="w">y</span> <span class="w">los</span> <span class="w">peatones.</span></li>
+      <li><span class="w">No</span> <span class="w">manejes</span> <span class="w">por</span> <span class="w">el</span> <span class="w">carril</span> <span class="w">izquierdo</span> <span class="w">a</span> <span class="w">menos</span> <span class="w">que</span> <span class="w">vayas</span> <span class="w">a</span> <span class="w">rebasar.</span></li>
+      <li><span class="w">Usa</span> <span class="w">las</span> <span class="w">direccionales</span> <span class="w">cada</span> <span class="w">vez.</span></li>
+      <li class="crit"><span class="w">No</span> <span class="w">te</span> <span class="w">pegues</span> <span class="w">al</span> <span class="w">auto</span> <span class="w">de</span> <span class="w">enfrente.</span> <span class="w">Te</span> <span class="w">están</span> <span class="w">grabando.</span> <span class="w">Sonríe.</span></li>
+      <li><span class="w">No</span> <span class="w">uses</span> <span class="w">audífonos</span> <span class="w">mientras</span> <span class="w">manejas.</span></li>
+      <li><span class="w">Manos</span> <span class="w">libres</span> <span class="w">solo</span> <span class="w">en</span> <span class="w">emergencias.</span> <span class="w">Que</span> <span class="w">tu</span> <span class="w">compañero</span> <span class="w">atienda</span> <span class="w">las</span> <span class="w">llamadas.</span></li>
+      <li><span class="w">Planea</span> <span class="w">tu</span> <span class="w">ruta</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">salir</span> <span class="w">o</span> <span class="w">inmediatamente</span> <span class="w">después</span> <span class="w">de</span> <span class="w">registrar</span> <span class="w">tu</span> <span class="w">entrada.</span></li>
+      <li><span class="w">Revisa</span> <span class="w">las</span> <span class="w">luces</span> <span class="w">y</span> <span class="w">la</span> <span class="w">presión</span> <span class="w">de</span> <span class="w">las</span> <span class="w">llantas</span> <span class="w">cada</span> <span class="w">noche.</span></li>
+      <li><span class="w">Mantén</span> <span class="w">los</span> <span class="w">espejos</span> <span class="w">limpios</span> <span class="w">y</span> <span class="w">bien</span> <span class="w">ajustados.</span></li>
+    </ul>
+  </div>
+
+  <!-- 11: DRIVING RULES 2 -->
+  <div class="slide t-blue" data-index="11" data-wrapped="1">
+    <div class="slide-tag">Manejo · Operación de la camioneta</div>
+    <div class="slide-title"><span class="w">Operación</span> <span class="w">de</span> <span class="w">la</span> <span class="w">camioneta</span> <span class="w">—</span> <span class="w">En</span> <span class="w">cada</span> <span class="w">ubicación</span></div>
+    <div class="badge blue"><span class="w">Obligatorio</span></div>
+    <ul class="slide-list">
+      <li class="crit"><span class="w">Debes</span> <span class="w">tener</span> <span class="w">un</span> <span class="w">vigía</span> <span class="w">(spotter)</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">reversar.</span> <span class="w">Cada</span> <span class="w">vez.</span> <span class="w">En</span> <span class="w">cada</span> <span class="w">ubicación.</span></li>
+      <li><span class="w">Regla</span> <span class="w">general:</span> <span class="w">la</span> <span class="w">diapositiva</span> <span class="w">de</span> <span class="w">Actualización</span> <span class="w">tiene</span> <span class="w">la</span> <span class="w">única</span> <span class="w">excepción,</span> <span class="w">para</span> <span class="w">ubicaciones</span> <span class="w">pequeñas</span> <span class="w">y</span> <span class="w">conocidas.</span></li>
+      <li><span class="w">No</span> <span class="w">guardes</span> <span class="w">nada</span> <span class="w">en</span> <span class="w">el</span> <span class="w">tablero.</span> <span class="w">Se</span> <span class="w">convierte</span> <span class="w">en</span> <span class="w">un</span> <span class="w">proyectil</span> <span class="w">en</span> <span class="w">una</span> <span class="w">frenada</span> <span class="w">repentina.</span></li>
+      <li><span class="w">Antes</span> <span class="w">de</span> <span class="w">manejar,</span> <span class="w">revisa</span> <span class="w">debajo</span> <span class="w">del</span> <span class="w">camión</span> <span class="w">por</span> <span class="w">si</span> <span class="w">hay</span> <span class="w">herramientas,</span> <span class="w">obstáculos,</span> <span class="w">niños</span> <span class="w">o</span> <span class="w">animales.</span></li>
+      <li><span class="w">No</span> <span class="w">manejes</span> <span class="w">con</span> <span class="w">zapatos</span> <span class="w">demasiado</span> <span class="w">grandes.</span> <span class="w">Cámbiate</span> <span class="w">el</span> <span class="w">calzado</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">entrar</span> <span class="w">a</span> <span class="w">las</span> <span class="w">ubicaciones</span> <span class="w">de</span> <span class="w">los</span> <span class="w">clientes.</span></li>
+      <li><span class="w">Todos</span> <span class="w">los</span> <span class="w">conductores</span> <span class="w">aprobados</span> <span class="w">deben</span> <span class="w">pasar</span> <span class="w">primero</span> <span class="w">la</span> <span class="w">prueba</span> <span class="w">de</span> <span class="w">manejo</span> <span class="w">de</span> <span class="w">la</span> <span class="w">empresa.</span></li>
+      <li><span class="w">Reporta</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">infracciones</span> <span class="w">de</span> <span class="w">tránsito</span> <span class="w">al</span> <span class="w">gerente</span> <span class="w">de</span> <span class="w">seguridad.</span> <span class="w">Vehículos</span> <span class="w">de</span> <span class="w">trabajo</span> <span class="w">y</span> <span class="w">personales.</span></li>
+      <li><span class="w">Estaciona</span> <span class="w">las</span> <span class="w">camionetas</span> <span class="w">de</span> <span class="w">reversa</span> <span class="w">junto</span> <span class="w">a</span> <span class="w">las</span> <span class="w">entradas</span> <span class="w">de</span> <span class="w">las</span> <span class="w">tiendas</span> <span class="w">cuando</span> <span class="w">sea</span> <span class="w">posible,</span> <span class="w">para</span> <span class="w">acceso</span> <span class="w">de</span> <span class="w">emergencia.</span></li>
+      <li class="crit"><span class="w">Los</span> <span class="w">conductores</span> <span class="w">nuevos</span> <span class="w">y</span> <span class="w">jóvenes</span> <span class="w">deben</span> <span class="w">manejar</span> <span class="w">solo</span> <span class="w">cuando</span> <span class="w">sea</span> <span class="w">necesario.</span></li>
+      <li><span class="w">Reporta</span> <span class="w">los</span> <span class="w">malos</span> <span class="w">hábitos</span> <span class="w">de</span> <span class="w">manejo</span> <span class="w">de</span> <span class="w">tus</span> <span class="w">compañeros.</span> <span class="w">Podría</span> <span class="w">salvarte</span> <span class="w">la</span> <span class="w">vida.</span></li>
+    </ul>
+  </div>
+
+  <!-- 12: POLICE STOP -->
+  <div class="slide t-blue" data-index="12" data-wrapped="1">
+    <div class="slide-tag">Manejo · Policía</div>
+    <div class="slide-title"><span class="w">Si</span> <span class="w">te</span> <span class="w">detiene</span> <span class="w">la</span> <span class="w">policía</span></div>
+    <div class="badge yellow"><span class="w">Tenlo</span> <span class="w">en</span> <span class="w">cuenta</span></div>
+    <ul class="slide-list">
+      <li><span class="w">Enciende</span> <span class="w">las</span> <span class="w">luces</span> <span class="w">interiores</span> <span class="w">de</span> <span class="w">inmediato.</span></li>
+      <li><span class="w">Manos</span> <span class="w">sobre</span> <span class="w">el</span> <span class="w">volante.</span> <span class="w">Las</span> <span class="w">manos</span> <span class="w">de</span> <span class="w">los</span> <span class="w">pasajeros</span> <span class="w">visibles.</span></li>
+      <li><span class="w">Sin</span> <span class="w">movimientos</span> <span class="w">bruscos.</span> <span class="w">Lento,</span> <span class="w">cortés</span> <span class="w">y</span> <span class="w">amable.</span></li>
+      <li><span class="w">Sigue</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">órdenes</span> <span class="w">de</span> <span class="w">la</span> <span class="w">policía.</span></li>
+      <li class="crit"><span class="w">Nunca</span> <span class="w">aceptes</span> <span class="w">la</span> <span class="w">culpa</span> <span class="w">de</span> <span class="w">un</span> <span class="w">accidente.</span> <span class="w">Guarda</span> <span class="w">silencio.</span></li>
+      <li class="crit"><span class="w">Llama</span> <span class="w">a</span> <span class="w">la</span> <span class="w">oficina</span> <span class="w">de</span> <span class="w">inmediato.</span> <span class="w">No</span> <span class="w">hables</span> <span class="w">con</span> <span class="w">nadie</span> <span class="w">hasta</span> <span class="w">hacerlo.</span></li>
+    </ul>
+    <div class="info-box blue" style="margin-top:12px;">
+      <p><strong><span class="w">Protocolo</span> <span class="w">de</span> <span class="w">accidente:</span></strong> <span class="w">Silencio</span> <span class="w">primero.</span> <span class="w">Llama</span> <span class="w">a</span> <span class="w">la</span> <span class="w">oficina</span> <span class="w">primero.</span> <span class="w">Todo</span> <span class="w">lo</span> <span class="w">demás,</span> <span class="w">después.</span></p>
+    </div>
+  </div>
+
+  <!-- 13: VERIFICATION TRAP 2 -->
+  <div class="slide t-warn" data-index="13" data-wrapped="1">
+    <div class="slide-tag">Manejo · Actualización importante</div>
+    <div class="slide-title"><span class="w">Política</span> <span class="w">de</span> <span class="w">reversa</span> <span class="w">—</span> <span class="w">Aclaración</span></div>
+    <div class="badge warn"><span class="w">Recordatorio</span></div>
+    <div class="verify-box">
+      <p><span class="w">Una</span> <span class="w">nota</span> <span class="w">rápida</span> <span class="w">sobre</span> <span class="w">el</span> <span class="w">requisito</span> <span class="w">del</span> <span class="w">vigía</span> <span class="w">al</span> <span class="w">reversar.</span> <span class="w">En</span> <span class="w">ubicaciones</span> <span class="w">pequeñas</span> <span class="w">y</span> <span class="w">conocidas,</span> <span class="w">donde</span> <span class="w">la</span> <span class="w">cuadrilla</span> <span class="w">ha</span> <span class="w">atendido</span> <span class="w">el</span> <span class="w">sitio</span> <span class="w">varias</span> <span class="w">veces</span> <span class="w">y</span> <span class="w">el</span> <span class="w">área</span> <span class="w">es</span> <span class="w">bien</span> <span class="w">conocida,</span> <span class="w">no</span> <span class="w">se</span> <span class="w">requiere</span> <span class="w">un</span> <span class="w">vigía</span> <span class="w">antes</span> <span class="w">de</span> <span class="w">reversar.</span> <span class="w">Usa</span> <span class="w">tu</span> <span class="w">mejor</span> <span class="w">criterio</span> <span class="w">en</span> <span class="w">ubicaciones</span> <span class="w">que</span> <span class="w">conoces</span> <span class="w">bien.</span> <span class="w">La</span> <span class="w">regla</span> <span class="w">del</span> <span class="w">vigía</span> <span class="w">está</span> <span class="w">pensada</span> <span class="w">principalmente</span> <span class="w">para</span> <span class="w">ubicaciones</span> <span class="w">nuevas</span> <span class="w">o</span> <span class="w">desconocidas.</span></p>
+      <p><span class="w">Esta</span> <span class="w">es</span> <span class="w">la</span> <span class="w">excepción</span> <span class="w">a</span> <span class="w">la</span> <span class="w">diapositiva</span> <span class="w">de</span> <span class="w">Operación</span> <span class="w">de</span> <span class="w">la</span> <span class="w">camioneta,</span> <span class="w">no</span> <span class="w">reemplaza</span> <span class="w">toda</span> <span class="w">la</span> <span class="w">regla:</span> <span class="w">el</span> <span class="w">vigía</span> <span class="w">sigue</span> <span class="w">siendo</span> <span class="w">obligatorio</span> <span class="w">en</span> <span class="w">ubicaciones</span> <span class="w">nuevas</span> <span class="w">o</span> <span class="w">desconocidas.</span></p>
+    </div>
+  </div>
+
+  <!-- 14: SURROUNDINGS -->
+  <div class="slide t-neutral" data-index="14" data-wrapped="1">
+    <div class="slide-tag">Entorno · Atención</div>
+    <div class="slide-title"><span class="w">Mantente</span> <span class="w">atento</span> <span class="w">—</span> <span class="w">En</span> <span class="w">cada</span> <span class="w">ubicación</span></div>
+    <div class="badge orange"><span class="w">Siempre</span> <span class="w">alerta</span></div>
+    <ul class="slide-list">
+      <li><span class="w">Mantente</span> <span class="w">observador</span> <span class="w">cerca</span> <span class="w">de</span> <span class="w">calles</span> <span class="w">transitadas,</span> <span class="w">autos</span> <span class="w">estacionados</span> <span class="w">o</span> <span class="w">grupos</span> <span class="w">de</span> <span class="w">personas</span> <span class="w">cerca</span> <span class="w">de</span> <span class="w">tu</span> <span class="w">área</span> <span class="w">de</span> <span class="w">trabajo.</span></li>
+      <li class="crit"><span class="w">No</span> <span class="w">dudes</span> <span class="w">en</span> <span class="w">llamar</span> <span class="w">a</span> <span class="w">la</span> <span class="w">policía</span> <span class="w">si</span> <span class="w">algo</span> <span class="w">no</span> <span class="w">se</span> <span class="w">siente</span> <span class="w">bien.</span></li>
+      <li><span class="w">Llama</span> <span class="w">a</span> <span class="w">los</span> <span class="w">clientes</span> <span class="w">con</span> <span class="w">anticipación</span> <span class="w">para</span> <span class="w">avisarles</span> <span class="w">que</span> <span class="w">vas</span> <span class="w">a</span> <span class="w">tocar</span> <span class="w">la</span> <span class="w">puerta</span> <span class="w">trasera.</span></li>
+      <li><span class="w">Los</span> <span class="w">MOD</span> <span class="w">nocturnos</span> <span class="w">a</span> <span class="w">menudo</span> <span class="w">no</span> <span class="w">recuerdan</span> <span class="w">o</span> <span class="w">no</span> <span class="w">saben</span> <span class="w">que</span> <span class="w">vas</span> <span class="w">a</span> <span class="w">llegar.</span></li>
+    </ul>
+    <div class="rule-block red" style="margin-top:12px;">
+      <p><strong><span class="w">Si</span> <span class="w">suena</span> <span class="w">la</span> <span class="w">alarma</span> <span class="w">durante</span> <span class="w">el</span> <span class="w">acceso</span> <span class="w">con</span> <span class="w">llave:</span></strong> <span class="w">Toma</span> <span class="w">el</span> <span class="w">teléfono</span> <span class="w">inalámbrico.</span> <span class="w">Regresa</span> <span class="w">a</span> <span class="w">la</span> <span class="w">camioneta</span> <span class="w">con</span> <span class="w">todas</span> <span class="w">las</span> <span class="w">luces</span> <span class="w">encendidas.</span> <span class="w">Espera</span> <span class="w">a</span> <span class="w">la</span> <span class="w">policía.</span></p>
+    </div>
+    <div class="rule-block red" style="margin-top:6px;">
+      <p><strong><span class="w">Tienda</span> <span class="w">abierta</span> <span class="w">o</span> <span class="w">sin</span> <span class="w">seguro</span> <span class="w">después</span> <span class="w">del</span> <span class="w">horario:</span></strong> <span class="w">No</span> <span class="w">entres.</span> <span class="w">Llama</span> <span class="w">a</span> <span class="w">la</span> <span class="w">policía</span> <span class="w">para</span> <span class="w">que</span> <span class="w">revise</span> <span class="w">el</span> <span class="w">lugar</span> <span class="w">primero.</span> <span class="w">Luego</span> <span class="w">llama</span> <span class="w">a</span> <span class="w">la</span> <span class="w">línea</span> <span class="w">directa</span> <span class="w">de</span> <span class="w">inmediato.</span></p>
+    </div>
+  </div>
+
+  <!-- 15: JOB COMPLETION -->
+  <div class="slide t-neutral" data-index="15" data-wrapped="1">
+    <div class="slide-tag">Finalización del trabajo</div>
+    <div class="slide-title"><span class="w">Antes</span> <span class="w">de</span> <span class="w">irte</span> <span class="w">—</span> <span class="w">En</span> <span class="w">cada</span> <span class="w">trabajo</span></div>
+    <div class="badge green"><span class="w">Lista</span> <span class="w">de</span> <span class="w">verificación</span></div>
+    <div class="check-list" style="margin-top:8px;">
+      <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span><span class="w">Todos</span> <span class="w">los</span> <span class="w">interruptores</span> <span class="w">de</span> <span class="w">luz</span> <span class="w">en</span> <span class="w">APAGADO.</span> <span class="w">Ventiladores</span> <span class="w">en</span> <span class="w">ENCENDIDO.</span> <span class="w">Documenta</span> <span class="w">en</span> <span class="w">MyTechPix.</span></span></div>
+      <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span><span class="w">No</span> <span class="w">dejes</span> <span class="w">trapos</span> <span class="w">en</span> <span class="w">el</span> <span class="w">techo,</span> <span class="w">en</span> <span class="w">la</span> <span class="w">campana,</span> <span class="w">ni</span> <span class="w">dentro</span> <span class="w">o</span> <span class="w">sobre</span> <span class="w">los</span> <span class="w">electrodomésticos.</span> <span class="w">Documenta</span> <span class="w">en</span> <span class="w">MyTechPix.</span></span></div>
+      <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span><span class="w">Desecha</span> <span class="w">las</span> <span class="w">navajas</span> <span class="w">de</span> <span class="w">afeitar</span> <span class="w">correctamente.</span> <span class="w">Usa</span> <span class="w">un</span> <span class="w">vaso</span> <span class="w">para</span> <span class="w">llevar</span> <span class="w">con</span> <span class="w">cinta.</span></span></div>
+      <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span><span class="w">Todas</span> <span class="w">las</span> <span class="w">puertas</span> <span class="w">correspondientes</span> <span class="w">cerradas</span> <span class="w">y</span> <span class="w">con</span> <span class="w">seguro,</span> <span class="w">incluido</span> <span class="w">el</span> <span class="w">acceso</span> <span class="w">al</span> <span class="w">techo.</span></span></div>
+      <div class="check-item"><div class="check-box" onclick="toggleCheck(this)"></div><span><span class="w">Alarmas</span> <span class="w">correspondientes</span> <span class="w">activadas.</span> <span class="w">Documenta</span> <span class="w">en</span> <span class="w">MyTechPix.</span></span></div>
+    </div>
+  </div>
+
+  <!-- 16: COMPANY POLICY -->
+  <div class="slide t-dark" data-index="16" data-wrapped="1">
+    <div class="slide-tag">Política de la empresa</div>
+    <div class="slide-title"><span class="w">Logotipo</span> <span class="w">de</span> <span class="w">Hood</span> <span class="w">Boss</span> <span class="w">obligatorio</span> <span class="w">en</span> <span class="w">todo</span> <span class="w">momento</span></div>
+    <div class="rule-block orange">
+      <p><span class="w">Todos</span> <span class="w">los</span> <span class="w">empleados</span> <span class="w">deben</span> <span class="w">tener</span> <span class="w">visible</span> <span class="w">el</span> <span class="w">logotipo</span> <span class="w">de</span> <span class="w">Hood</span> <span class="w">Boss</span> <span class="w">en</span> <span class="w">todo</span> <span class="w">momento,</span> <span class="w">desde</span> <span class="w">la</span> <span class="w">entrada</span> <span class="w">hasta</span> <span class="w">la</span> <span class="w">salida.</span> <span class="w">Esto</span> <span class="w">es</span> <span class="w">por</span> <span class="w">seguridad,</span> <span class="w">protección</span> <span class="w">y</span> <span class="w">representación</span> <span class="w">profesional.</span></p>
+    </div>
+    <div class="rule-block orange" style="margin-top:6px;">
+      <p><span class="w">Las</span> <span class="w">cuadrillas</span> <span class="w">y</span> <span class="w">los</span> <span class="w">gerentes</span> <span class="w">deben</span> <span class="w">releer</span> <span class="w">y</span> <span class="w">entender</span> <span class="w">por</span> <span class="w">completo</span> <span class="w">el</span> <span class="w">contenido</span> <span class="w">de</span> <span class="w">estas</span> <span class="w">políticas.</span> <span class="w">No</span> <span class="w">solo</span> <span class="w">una</span> <span class="w">vez.</span> <span class="w">Con</span> <span class="w">regularidad.</span></p>
+    </div>
+    <div class="alert-banner" style="margin-top:12px;">
+      <p><span class="w">Todas</span> <span class="w">las</span> <span class="w">lesiones</span> <span class="w">deben</span> <span class="w">reportarse</span> <span class="w">al</span> <span class="w">Gerente</span> <span class="w">de</span> <span class="w">Seguridad</span> <span class="w">de</span> <span class="w">inmediato.</span> <span class="w">Atención</span> <span class="w">médica</span> <span class="w">o</span> <span class="w">daños</span> <span class="w">materiales</span> <span class="w">significan</span> <span class="w">una</span> <span class="w">prueba</span> <span class="w">de</span> <span class="w">drogas</span> <span class="w">obligatoria.</span></p>
+    </div>
+  </div>
+
+  <!-- 17: FINAL -->
+  <div class="slide t-neutral" data-index="17" data-wrapped="1">
+    <div class="slide-tag">La norma</div>
+    <div class="hero-title" style="font-size:32px;margin-bottom:8px;"><span class="w">Cuídate.</span><br><span class="w">Mantente</span> <span class="w">alerta.</span></div>
+    <div class="quote-box">
+      <p><span class="w">Cualquier</span> <span class="w">pregunta</span> <span class="w">debe</span> <span class="w">dirigirse</span> <span class="w">a</span> <span class="w">tu</span> <span class="w">supervisor</span> <span class="w">de</span> <span class="w">seguridad.</span> <span class="w">No</span> <span class="w">adivines.</span> <span class="w">No</span> <span class="w">supongas.</span> <span class="w">Pregunta.</span></p>
+    </div>
+    <div style="margin-top:24px;font-size:14px;color:#ff6600;text-align:center;font-weight:700;"><span class="w">Gracias</span> <span class="w">—</span> <span class="w">Ant</span></div>
+    <div style="margin-top:8px;font-size:10px;color:#222;text-align:center;letter-spacing:2px;text-transform:uppercase;"><span class="w">Operaciones</span> <span class="w">de</span> <span class="w">Campo</span> <span class="w">de</span> <span class="w">KEC</span> <span class="w">·</span> <span class="w">Reunión</span> <span class="w">General</span> <span class="w">de</span> <span class="w">Seguridad</span></div>
+  </div>
+
+</div>
+
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" onclick="prevSlide()" disabled="">← Atrás</button>
+  <button class="nav-btn primary" id="next-btn" onclick="nextSlide()">Siguiente →</button>
+</div>
+
+<script>
+const TOTAL = 18;
+let cur = 0, ttsOn = false, autoOn = false, isAnimating = false;
+let countdownInterval = null, voices = [], slideWordSpans = [];
+
+function wrapWords(el) {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const p = node.parentElement;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      const tag = p.tagName;
+      if (['SCRIPT','STYLE','BUTTON'].includes(tag)) return NodeFilter.FILTER_REJECT;
+      if (p.classList.contains('slide-tag') || p.classList.contains('hero-logo') || p.classList.contains('dont-label') || p.classList.contains('countdown-label')) return NodeFilter.FILTER_REJECT;
+      return node.textContent.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    }
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach(node => {
+    const parts = node.textContent.split(/(\s+)/);
+    const frag = document.createDocumentFragment();
+    parts.forEach(part => {
+      if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); }
+      else if (part) { const s = document.createElement('span'); s.className = 'w'; s.textContent = part; frag.appendChild(s); }
+    });
+    node.parentNode.replaceChild(frag, node);
+  });
+}
+
+function initAllSlides() {
+  document.querySelectorAll('.slide').forEach(s => { if (!s.dataset.wrapped) { wrapWords(s); s.dataset.wrapped = '1'; } });
+}
+
+function getActiveWordSpans() {
+  const a = document.querySelector('.slide.is-active');
+  return a ? Array.from(a.querySelectorAll('.w')) : [];
+}
+
+function clearHighlights() { document.querySelectorAll('.w.lit').forEach(w => w.classList.remove('lit')); }
+
+function loadVoices() { voices = window.speechSynthesis.getVoices(); }
+window.speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+
+function getBestVoice() {
+  const preferred = ['Paulina','Jorge','Mónica','Monica','Sabina','Raul','Helena','Lucia','Google español de Estados Unidos','Microsoft Sabina','Microsoft Raul'];
+  for (let n of preferred) { const v = voices.find(v => v.name.includes(n)); if (v) return v; }
+  return voices.find(v => v.lang === 'es-MX') || voices.find(v => v.lang === 'es-ES') || voices.find(v => v.lang?.startsWith('es')) || voices[0] || null;
+}
+
+// ── TTS PACING (Nov 25 fix) ────────────────────────────────────
+// The reader used to speak a whole slide as ONE utterance at rate
+// 0.88, with bullets joined by a plain space and no punctuation,
+// so sentences ran together with no pause. Now each block (title,
+// bullet, paragraph) is its own utterance at rate 0.75, with a
+// real 600 ms silence between blocks. Highlights keep working:
+// each segment knows the word-span index it starts at.
+const TTS_RATE = 0.75;
+const TTS_PAUSE_MS = 600;
+let ttsToken = 0;
+function buildTTSSegments(spans) {
+  const segs = [];
+  let cur = null;
+  spans.forEach((span, i) => {
+    let block = span.parentElement;
+    while (block && block.className !== 'slide') {
+      if (['LI','P'].includes(block.tagName)) break;
+      block = block.parentElement;
+    }
+    if (!cur || cur.block !== block) {
+      cur = { block: block, words: [], start: i };
+      segs.push(cur);
+    }
+    cur.words.push(span.textContent);
+  });
+  return segs.map(g => {
+    let t = g.words.join(' ').trim();
+    if (t && !/[.!?]$/.test(t)) t += '.';
+    return { text: t, start: g.start };
+  }).filter(g => g.text.length > 0);
+}
+function speakSegments(segs, idx, token) {
+  if (token !== ttsToken || !ttsOn) return;
+  if (idx >= segs.length) {
+    document.getElementById('tts-btn').classList.remove('speaking');
+    clearHighlights();
+    if (autoOn && cur < TOTAL - 1) startCountdown();
+    return;
+  }
+  const seg = segs[idx];
+  const u = new SpeechSynthesisUtterance(seg.text);
+  u.lang = 'es-MX';
+  u.rate = TTS_RATE; u.pitch = 1.0; u.volume = 1.0;
+  const v = getBestVoice();
+  if (v) { u.voice = v; if (v.lang && v.lang.indexOf('es') === 0) u.lang = v.lang; }
+  u.onboundary = (e) => {
+    if (e.name !== 'word') return;
+    const chunk = seg.text.slice(0, e.charIndex + Math.max(e.charLength || 1, 1)).trim();
+    const n = chunk.split(/\s+/).filter(t => t.length > 0).length;
+    clearHighlights();
+    const span = slideWordSpans[Math.min(seg.start + n - 1, slideWordSpans.length - 1)];
+    if (span) { span.classList.add('lit'); span.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  };
+  u.onend = () => { setTimeout(() => speakSegments(segs, idx + 1, token), TTS_PAUSE_MS); };
+  u.onerror = () => { setTimeout(() => speakSegments(segs, idx + 1, token), TTS_PAUSE_MS); };
+  window.speechSynthesis.speak(u);
+}
+
+function readSlide() {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  clearCountdown();
+  clearHighlights();
+  slideWordSpans = getActiveWordSpans();
+  const segs = buildTTSSegments(slideWordSpans);
+  if (!segs.length) return;
+
+  ttsToken++;
+  const token = ttsToken;
+  document.getElementById('tts-btn').classList.add('speaking');
+  speakSegments(segs, 0, token);
+}
+
+function toggleTTS() {
+  ttsOn = !ttsOn;
+  const btn = document.getElementById('tts-btn');
+  if (ttsOn) { btn.textContent = '🔇 Parar'; readSlide(); }
+  else { window.speechSynthesis.cancel(); btn.textContent = '🎧 Escuchar · ▶️ Reproducir'; btn.classList.remove('speaking'); clearCountdown(); clearHighlights(); }
+}
+
+function toggleAuto() {
+  autoOn = !autoOn;
+  const btn = document.getElementById('auto-btn');
+  btn.textContent = autoOn ? '⏭ Auto: Activado' : '⏭ Auto: Desactivado';
+  btn.classList.toggle('on', autoOn);
+  if (!autoOn) clearCountdown();
+}
+
+const COUNTDOWN_SECS = 4, CIRC = 94;
+
+function startCountdown() {
+  clearCountdown();
+  if (cur >= TOTAL - 1) return;
+  const wrap = document.getElementById('countdown-wrap');
+  const circle = document.getElementById('countdown-circle');
+  const num = document.getElementById('countdown-num');
+  circle.style.strokeDasharray = CIRC; circle.style.strokeDashoffset = CIRC;
+  wrap.classList.add('visible'); num.textContent = COUNTDOWN_SECS;
+  let elapsed = 0;
+  countdownInterval = setInterval(() => {
+    elapsed += 50;
+    circle.style.strokeDashoffset = CIRC - (CIRC * elapsed / (COUNTDOWN_SECS * 1000));
+    const rem = Math.ceil(COUNTDOWN_SECS - elapsed / 1000);
+    num.textContent = rem > 0 ? rem : '';
+    if (elapsed >= COUNTDOWN_SECS * 1000) { clearCountdown(); nextSlide(); }
+  }, 50);
+}
+
+function clearCountdown() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  document.getElementById('countdown-wrap').classList.remove('visible');
+  const c = document.getElementById('countdown-circle'); if (c) c.style.strokeDashoffset = CIRC;
+  const n = document.getElementById('countdown-num'); if (n) n.textContent = COUNTDOWN_SECS;
+}
+
+const ANIM_MS = 400;
+
+function goTo(index) {
+  if (index < 0 || index >= TOTAL || index === cur || isAnimating) return;
+  isAnimating = true;
+  clearCountdown(); clearHighlights(); window.speechSynthesis.cancel();
+  const fromEl = document.querySelector('.slide.is-active');
+  const toEl = document.querySelector(`.slide[data-index="${index}"]`);
+  if (!fromEl || !toEl) { isAnimating = false; return; }
+  const dir = index > cur ? 'right' : 'left';
+  toEl.className = toEl.className.replace(/\b(is-active|enter-from-right|enter-from-left|exit-to-left|exit-to-right|animating)\b/g,'').trim();
+  toEl.classList.add(dir === 'right' ? 'enter-from-right' : 'enter-from-left');
+  void toEl.offsetWidth;
+  fromEl.classList.remove('is-active');
+  fromEl.classList.add(dir === 'right' ? 'exit-to-left' : 'exit-to-right');
+  requestAnimationFrame(() => requestAnimationFrame(() => { toEl.classList.add('animating'); fromEl.classList.add('animating'); }));
+  setTimeout(() => {
+    fromEl.classList.remove('exit-to-left','exit-to-right','animating'); fromEl.style.cssText = '';
+    toEl.classList.remove('enter-from-right','enter-from-left','animating'); toEl.classList.add('is-active');
+    cur = index; isAnimating = false; updateUI();
+    if (ttsOn) readSlide();
+  }, ANIM_MS);
+  cur = index; updateUI();
+}
+
+function nextSlide() { goTo(cur + 1); }
+function prevSlide() { goTo(cur - 1); }
+function toggleCheck(el) { el.classList.toggle('checked'); }
+
+function updateUI() {
+  document.getElementById('progress-bar').style.width = (cur / (TOTAL - 1) * 100) + '%';
+  document.getElementById('slide-counter').textContent = cur === 0 ? '' : cur + ' / ' + (TOTAL - 1);
+  document.getElementById('prev-btn').disabled = cur === 0;
+  const nb = document.getElementById('next-btn');
+  nb.textContent = cur === TOTAL - 1 ? '✓ Listo' : 'Siguiente →';
+  nb.disabled = cur === TOTAL - 1;
+}
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (isAnimating) return;
+  const diff = tx - e.changedTouches[0].clientX;
+  if (Math.abs(diff) > 45) diff > 0 ? nextSlide() : prevSlide();
+}, { passive: true });
+document.addEventListener('keydown', e => { if (e.key === 'ArrowRight') nextSlide(); if (e.key === 'ArrowLeft') prevSlide(); });
+
+initAllSlides();
+updateUI();
+</script>
+
+
+</body></html>
