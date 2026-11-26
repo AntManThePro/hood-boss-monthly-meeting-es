@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#111122"/>
+      <stop offset="100%" stop-color="#0a0a0f"/>
+    </radialGradient>
+    <linearGradient id="shield" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00ff87"/>
+      <stop offset="50%" stop-color="#60efff"/>
+      <stop offset="100%" stop-color="#00ff87"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softglow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+  
+  <!-- Outer neon ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#60efff" stroke-width="4" opacity="0.4" filter="url(#softglow)"/>
+  
+  <!-- Shield -->
+  <path d="M256 70 L380 120 L380 250 Q380 340 256 420 Q132 340 132 250 L132 120 Z" 
+        fill="none" stroke="url(#shield)" stroke-width="14" stroke-linejoin="round" filter="url(#glow)"/>
+  
+  <!-- Inner shield fill subtle -->
+  <path d="M256 95 L360 135 L360 245 Q360 320 256 390 Q152 320 152 245 L152 135 Z" 
+        fill="#0a0a0f" opacity="0.7"/>
+  
+  <!-- Ladder / Safety mark -->
+  <g transform="translate(256,230)" filter="url(#softglow)">
+    <!-- Ladder rails -->
+    <line x1="-40" y1="-70" x2="-40" y2="70" stroke="#ff0080" stroke-width="8" stroke-linecap="round"/>
+    <line x1="40" y1="-70" x2="40" y2="70" stroke="#ff0080" stroke-width="8" stroke-linecap="round"/>
+    <!-- Rungs -->
+    <line x1="-40" y1="-40" x2="40" y2="-40" stroke="#ffcc00" stroke-width="6" stroke-linecap="round"/>
+    <line x1="-40" y1="0" x2="40" y2="0" stroke="#ffcc00" stroke-width="6" stroke-linecap="round"/>
+    <line x1="-40" y1="40" x2="40" y2="40" stroke="#ffcc00" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  
+  <!-- HB monogram -->
+  <text x="256" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="800" fill="#60efff" letter-spacing="4">HB</text>
+  
+  <!-- Accent dots -->
+  <circle cx="140" cy="100" r="6" fill="#00ff87" opacity="0.8"/>
+  <circle cx="372" cy="100" r="6" fill="#ffcc00" opacity="0.8"/>
+</svg>
