@@ -2,6 +2,7 @@
 
 Spanish version of the KEC General Safety Meeting: ladder and roof, chemical hazards, driving, surroundings, job-site completion.
 
+- Live (Spanish, this site): https://hood-boss-monthly-meeting-es.netlify.app/
 - Live (English): https://hood-boss-monthly-meeting.netlify.app/
 - This site: Spanish, 18 slides.
 - Read-aloud: Spanish speech synthesis, rate 0.75, 600 ms pause between bullets/sentences.
